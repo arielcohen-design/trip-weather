@@ -9,16 +9,18 @@
 <title>Alps Trip Weather 2026</title>
 <style>
 :root{--bg:#071a2b;--panel:rgba(8,34,55,.88);--line:rgba(255,255,255,.18);--text:#fff;--muted:#c8d7e5;--good:#62d55f;--watch:#ffc342;--bad:#ff4b55;--early:#8fa8bd}
-*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0,#286997 0,#102f4a 32%,#071a2b 75%);min-height:100vh}
-.wrap{max-width:1500px;margin:auto;padding:22px}
-header{display:grid;grid-template-columns:1.1fr 1fr auto;gap:18px;align-items:center;margin-bottom:18px}
-h1{margin:0;font-size:clamp(28px,3.1vw,48px);letter-spacing:-1px}.sub{color:var(--muted);font-size:18px;margin-top:4px}
-.summary{display:flex;border:1px solid var(--line);border-radius:18px;background:rgba(5,26,43,.52);overflow:hidden}.sum{flex:1;padding:12px 16px;min-width:130px}.sum+.sum{border-left:1px solid var(--line)}.num{font-size:30px;font-weight:800}.label{font-weight:700}
-.update{text-align:right;color:var(--muted);font-size:14px}.update button{margin-top:8px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:#fff;padding:9px 13px;border-radius:12px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.card{min-height:285px;border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(180deg,rgba(18,68,101,.93),rgba(5,37,56,.96));display:flex;flex-direction:column;box-shadow:0 12px 28px rgba(0,0,0,.18)}
-.top{display:flex;justify-content:space-between;gap:8px}.day{font-weight:800;font-size:19px}.date{color:var(--muted)}.place{font-size:20px;font-weight:800;margin:10px 0 2px}.route{font-size:13px;color:#fff;background:rgba(255,255,255,.09);padding:6px 8px;border-radius:9px;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.focus{color:var(--muted);font-size:12px}.country{color:var(--muted);font-size:12px}.weather{font-size:54px;line-height:1;margin:18px 0 8px}.temps{font-size:27px;font-weight:800}.details{display:flex;gap:10px;flex-wrap:wrap;color:#d8e6f1;margin:7px 0}.models{font-size:12px;color:#c8d7e5;margin:3px 0 7px}.agree{font-weight:800}.spread{font-size:12px;color:#e7f0f6;margin-top:3px}.desc{color:#e7f0f6;min-height:24px}.status{margin-top:auto;border-radius:13px;padding:10px 12px;color:#071a2b;font-weight:900;font-size:17px}.status small{display:block;font-size:12px;font-weight:700;margin-top:2px}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
-footer{text-align:center;color:#a9bfce;padding:18px 4px 4px;font-size:12px}
-@media(max-width:1050px){header{grid-template-columns:1fr}.update{text-align:left}.grid{grid-template-columns:repeat(2,1fr)}} @media(max-width:650px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.sum{min-width:33%}}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0,#286997 0,#102f4a 32%,#071a2b 75%);min-height:100vh}
+.wrap{max-width:1600px;margin:auto;padding:10px 16px}header{display:grid;grid-template-columns:1.05fr 1fr auto;gap:14px;align-items:center;margin-bottom:10px}
+h1{margin:0;font-size:clamp(25px,2.6vw,42px);letter-spacing:-1px}.sub{color:var(--muted);font-size:15px;margin-top:2px}
+.summary{display:flex;border:1px solid var(--line);border-radius:15px;background:rgba(5,26,43,.52);overflow:hidden}.sum{flex:1;padding:7px 12px;min-width:105px}.sum+.sum{border-left:1px solid var(--line)}.num{font-size:25px;font-weight:800}.label{font-weight:700;font-size:13px}
+.update{text-align:right;color:var(--muted);font-size:12px}.update button{margin-top:5px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:#fff;padding:6px 10px;border-radius:10px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.card{height:318px;border:1px solid var(--line);border-radius:17px;padding:11px 12px;background:linear-gradient(180deg,rgba(18,68,101,.93),rgba(5,37,56,.96));display:flex;flex-direction:column;box-shadow:0 9px 22px rgba(0,0,0,.16);cursor:pointer;position:relative}
+.top{display:flex;justify-content:space-between;gap:7px}.day{font-weight:800;font-size:17px}.date{color:var(--muted);font-size:14px}.route{font-size:11px;font-weight:700;background:rgba(255,255,255,.12);padding:5px 7px;border-radius:8px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place{font-size:18px;font-weight:800;margin:8px 0 0}.country{color:var(--muted);font-size:11px}.weather{font-size:38px;line-height:1;margin:9px 0 3px}.temps{font-size:23px;font-weight:800}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;color:#d8e6f1;margin:4px 0;font-size:13px}.confidence{font-size:12px;font-weight:800;margin:4px 0}.high{color:#8be68a}.medium{color:#ffd264}.low{color:#ff8d93}.desc{font-size:12px;color:#e7f0f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{margin-top:auto;border-radius:11px;padding:7px 9px;color:#071a2b;font-weight:900;font-size:15px}.status small{display:block;font-size:10px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
+.hint{position:absolute;right:11px;bottom:53px;color:#9fb7c8;font-size:10px}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:20;padding:5vh 6vw}.modal.open{display:flex}.modalbox{margin:auto;width:min(900px,100%);max-height:90vh;overflow:auto;background:#0b2b43;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}.modalhead{display:flex;justify-content:space-between;gap:15px}.close{border:1px solid var(--line);background:rgba(255,255,255,.1);color:white;border-radius:10px;padding:7px 11px;font-weight:800}.modeltable{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}.modeltable th,.modeltable td{padding:9px;border-bottom:1px solid var(--line);text-align:right}.modeltable th:first-child,.modeltable td:first-child{text-align:left}.explain{color:var(--muted);font-size:13px;margin-top:12px}
+footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
+@media(max-width:1050px){header{grid-template-columns:1fr}.update{text-align:left}.grid{grid-template-columns:repeat(2,1fr)}.card{height:auto;min-height:300px}}@media(max-width:650px){.wrap{padding:10px}.grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.sum{min-width:33%}}
 </style>
 </head>
 <body><div class="wrap">
@@ -32,7 +34,7 @@ footer{text-align:center;color:#a9bfce;padding:18px 4px 4px;font-size:12px}
 <div class="update"><div id="updated">Loading forecasts…</div><button onclick="loadAll()">↻ Refresh</button></div>
 </header>
 <main class="grid" id="grid"></main>
-<footer>Live forecast: Open-Meteo · Mountain conditions can differ substantially from valley forecasts. Check local mountain/cable-car information before high-altitude hikes.</footer>
+<div class="modal" id="modal" onclick="if(event.target===this)closeDetail(event)"><div class="modalbox" id="modalContent"></div></div><footer>Live forecast: Open-Meteo · Mountain conditions can differ substantially from valley forecasts. Check local mountain/cable-car information before high-altitude hikes.</footer>
 </div>
 <script>
 const trip=[
@@ -67,50 +69,42 @@ function judge(t,x){
 async function oneModel(t,model){
  const elevation=t.elev?`&elevation=${t.elev}`:"";
  const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&models=${model}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum,precipitation_hours&timezone=auto&forecast_days=16`;
- const r=await fetch(url); if(!r.ok) return null; const j=await r.json();
- const i=j.daily?.time?.indexOf(t.date)??-1; if(i<0)return null;
+ const r=await fetch(url);if(!r.ok)return null;const j=await r.json();const i=j.daily?.time?.indexOf(t.date)??-1;if(i<0)return null;
  return {model,code:j.daily.weather_code[i],max:j.daily.temperature_2m_max[i],min:j.daily.temperature_2m_min[i],rain:j.daily.precipitation_probability_max?.[i]??null,gust:j.daily.wind_gusts_10m_max[i],snow:j.daily.snowfall_sum[i]??0,precip:j.daily.precipitation_sum[i]??0,rainHours:j.daily.precipitation_hours?.[i]??0};
 }
+function representativeCode(m){
+ const severity=c=>({99:9,96:9,95:8,82:7,75:7,73:6,71:5,65:6,63:5,61:4,81:5,80:4,55:4,53:3,51:2,48:2,45:2,3:1,2:1,1:0,0:0}[c]??0);
+ const counts={};m.forEach(v=>counts[v.code]=(counts[v.code]||0)+1);
+ return [...m].sort((a,b)=>(counts[b.code]-counts[a.code])||(severity(b.code)-severity(a.code)))[0].code;
+}
 async function forecast(t){
- // Use independent model families where available. Some shorter-range regional
- // models simply return no value for dates outside their horizon.
- const names=t.country==="Switzerland"
-   ? [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["meteoswiss_icon_seamless","MeteoSwiss"],["gfs_seamless","GFS"]]
-   : t.country==="Austria"
-   ? [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["geosphere_seamless","GeoSphere"],["gfs_seamless","GFS"]]
-   : [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["gfs_seamless","GFS"]];
- const raw=await Promise.all(names.map(async ([id,label])=>{let v=await oneModel(t,id); if(v)v.label=label; return v;}));
- const m=raw.filter(Boolean); if(!m.length)return null;
- const vals=k=>m.map(v=>v[k]).filter(v=>Number.isFinite(v));
- const avg=k=>{const a=vals(k);return a.reduce((x,y)=>x+y,0)/a.length};
- const min=k=>Math.min(...vals(k)), max=k=>Math.max(...vals(k));
- const rainy=m.filter(v=>(v.precip??0)>=0.2).length;
- const badish=m.filter(v=>(v.precip??0)>=3 || (v.gust??0)>=55 || (v.snow??0)>0).length;
- const codes=m.map(v=>v.code); const code=codes.sort((a,b)=>codes.filter(x=>x===a).length-codes.filter(x=>x===b).length).pop();
- return {
-  code,max:Math.round(avg("max")),min:Math.round(avg("min")),
-  rain:vals("rain").length?Math.round(avg("rain")):null,
-  gust:Math.round(max("gust")),snow:Math.round(avg("snow")*10)/10,
-  rainHours:Math.round(avg("rainHours")*10)/10,precip:Math.round(avg("precip")*10)/10,
-  models:m.map(v=>v.label),modelCount:m.length,rainy,badish,
-  tempRange:`${Math.round(min("min"))}–${Math.round(max("max"))}°`,
-  precipRange:`${Math.round(min("precip")*10)/10}–${Math.round(max("precip")*10)/10} mm`,
-  disagreement:(max("precip")-min("precip")>=3)||(max("max")-min("max")>=5)||(rainy>0&&rainy<m.length)
- };
+ const names=t.country==="Switzerland"?[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["meteoswiss_icon_seamless","MeteoSwiss"],["gfs_seamless","GFS"]]:t.country==="Austria"?[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["geosphere_seamless","GeoSphere"],["gfs_seamless","GFS"]]:[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["gfs_seamless","GFS"]];
+ const raw=await Promise.all(names.map(async([id,label])=>{let v=await oneModel(t,id);if(v)v.label=label;return v;}));const m=raw.filter(Boolean);if(!m.length)return null;
+ const vals=k=>m.map(v=>v[k]).filter(v=>Number.isFinite(v));const avg=k=>{const a=vals(k);return a.reduce((x,y)=>x+y,0)/a.length};const mn=k=>Math.min(...vals(k)),mx=k=>Math.max(...vals(k));
+ const rainy=m.filter(v=>(v.precip??0)>=0.2).length,badish=m.filter(v=>(v.precip??0)>=3||(v.gust??0)>=55||(v.snow??0)>0).length;
+ const pSpread=mx("precip")-mn("precip"),tSpread=mx("max")-mn("max");const disagreement=(pSpread>=3)||(tSpread>=5)||(rainy>0&&rainy<m.length);
+ let confidence="HIGH";if(disagreement)confidence=(pSpread>=6||tSpread>=7)?"LOW":"MEDIUM";
+ return {code:representativeCode(m),max:Math.round(avg("max")),min:Math.round(avg("min")),rain:vals("rain").length?Math.round(avg("rain")):null,gust:Math.round(mx("gust")),snow:Math.round(avg("snow")*10)/10,rainHours:Math.round(avg("rainHours")*10)/10,precip:Math.round(avg("precip")*10)/10,modelCount:m.length,rainy,badish,disagreement,confidence,details:m};
 }
-function card(t,x){
- let state,label,note,icon,desc;
- if(!x){state="early";label="TOO EARLY";note="Outside the current forecast window";icon="◌";desc="Forecast not available yet"}
- else{[state,label,note]=judge(t,x); [icon,desc]=wx[x.code]||["🌡️","Weather"]; }
- return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="focus">Weather focus · ${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours}h</span><span>☔ ${x.precip} mm</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div><div class="models"><span class="agree">${x.disagreement?"⚠️ Models differ":"✓ Models agree"}</span> · ${x.models.join(" · ")}<div class="spread">Model range: ${x.tempRange} · rain ${x.precipRange}</div></div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
+function card(t,x,i){
+ let state,label,note,icon,desc,conf="";
+ if(!x){state="early";label="TOO EARLY";note="Outside forecast window";icon="◌";desc="Forecast not available yet"}
+ else{[state,label,note]=judge(t,x);[icon,desc]=wx[x.code]||["🌦️","Mixed weather"];conf=`<div class="confidence ${x.confidence.toLowerCase()}">${x.confidence==="HIGH"?"✓":x.confidence==="MEDIUM"?"≈":"⚠"} ${x.confidence} confidence · ${x.modelCount} models</div>`}
+ return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours}h rain</span><span>☔ ${x.precip} mm</span><span>💨 ${x.gust} km/h</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
+let latest=[];
+function showDetail(i){
+ const t=trip[i],x=latest[i];if(!x)return;
+ const rows=x.details.map(v=>`<tr><td>${v.label}</td><td>${v.min?.toFixed(0)}–${v.max?.toFixed(0)}°C</td><td>${v.rain==null?"—":Math.round(v.rain)+"%"}</td><td>${v.rainHours?.toFixed(1)}h</td><td>${v.precip?.toFixed(1)} mm</td><td>${Math.round(v.gust)} km/h</td></tr>`).join("");
+ document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Confidence compares the available models. Regional models may disappear on later dates because their forecast horizon is shorter. Mountain forecasts use the dashboard's representative elevation where configured.</div>`;
+ document.getElementById("modal").classList.add("open");
+}
+function closeDetail(e){if(e)e.stopPropagation();document.getElementById("modal").classList.remove("open")}
 async function loadAll(){
- document.getElementById("updated").textContent="Updating…"; const grid=document.getElementById("grid"); grid.innerHTML="";
- const results=await Promise.all(trip.map(async t=>{try{return await forecast(t)}catch(e){return null}}));
- let counts={good:0,watch:0,bad:0};
- grid.innerHTML=trip.map((t,i)=>{let x=results[i]; if(x){counts[judge(t,x)[0]]++} return card(t,x)}).join("");
- goodN.textContent=counts.good; watchN.textContent=counts.watch; badN.textContent=counts.bad;
- updated.textContent="Updated "+new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date());
+ document.getElementById("updated").textContent="Updating…";const grid=document.getElementById("grid");grid.innerHTML="";
+ latest=await Promise.all(trip.map(async t=>{try{return await forecast(t)}catch(e){return null}}));let counts={good:0,watch:0,bad:0};
+ grid.innerHTML=trip.map((t,i)=>{let x=latest[i];if(x)counts[judge(t,x)[0]]++;return card(t,x,i)}).join("");
+ goodN.textContent=counts.good;watchN.textContent=counts.watch;badN.textContent=counts.bad;updated.textContent="Updated "+new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date());
 }
 loadAll(); setInterval(loadAll,30*60*1000);
 </script></body></html>
