@@ -54,6 +54,23 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 /* Sunrise/sunset line on each card */
 .sunline{font-size:12px;font-weight:800;color:#f1d78a;margin:4px 0 2px;white-space:nowrap}
 
+
+/* V5.6 — Mac + iPad responsive readability */
+/* Mac / larger browser windows: use 4 columns too. */
+@media (min-width:1401px){
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:14px !important}
+  .card{min-height:330px !important;height:auto !important;overflow:hidden}
+  .place{font-size:19px !important;line-height:1.08 !important}
+  .route{white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important}
+  .status{margin-top:auto !important;position:static !important}
+}
+/* Very wide desktop monitors can safely return to 5 columns. */
+@media (min-width:1900px){
+  .grid{grid-template-columns:repeat(5,minmax(0,1fr)) !important}
+}
+/* Never let helper text sit on top of the status panel. */
+.card{padding-bottom:14px !important}
+
 </style>
 
 <link rel="apple-touch-icon" href="alps-weather-icon.png">
