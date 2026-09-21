@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#102a43">
+<title>Alps Trip Weather 2026</title>
+<style>
+:root{--bg:#071a2b;--panel:rgba(8,34,55,.88);--line:rgba(255,255,255,.18);--text:#fff;--muted:#c8d7e5;--good:#62d55f;--watch:#ffc342;--bad:#ff4b55;--early:#8fa8bd}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0,#286997 0,#102f4a 32%,#071a2b 75%);min-height:100vh}
+.wrap{max-width:1500px;margin:auto;padding:22px}
+header{display:grid;grid-template-columns:1.1fr 1fr auto;gap:18px;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:clamp(28px,3.1vw,48px);letter-spacing:-1px}.sub{color:var(--muted);font-size:18px;margin-top:4px}
+.summary{display:flex;border:1px solid var(--line);border-radius:18px;background:rgba(5,26,43,.52);overflow:hidden}.sum{flex:1;padding:12px 16px;min-width:130px}.sum+.sum{border-left:1px solid var(--line)}.num{font-size:30px;font-weight:800}.label{font-weight:700}
+.update{text-align:right;color:var(--muted);font-size:14px}.update button{margin-top:8px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:#fff;padding:9px 13px;border-radius:12px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.card{min-height:285px;border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(180deg,rgba(18,68,101,.93),rgba(5,37,56,.96));display:flex;flex-direction:column;box-shadow:0 12px 28px rgba(0,0,0,.18)}
+.top{display:flex;justify-content:space-between;gap:8px}.day{font-weight:800;font-size:19px}.date{color:var(--muted)}.place{font-size:20px;font-weight:800;margin:10px 0 2px}.country{color:var(--muted);font-size:14px}.weather{font-size:54px;line-height:1;margin:18px 0 8px}.temps{font-size:27px;font-weight:800}.details{display:flex;gap:13px;flex-wrap:wrap;color:#d8e6f1;margin:7px 0}.desc{color:#e7f0f6;min-height:24px}.status{margin-top:auto;border-radius:13px;padding:10px 12px;color:#071a2b;font-weight:900;font-size:17px}.status small{display:block;font-size:12px;font-weight:700;margin-top:2px}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
+footer{text-align:center;color:#a9bfce;padding:18px 4px 4px;font-size:12px}
+@media(max-width:1050px){header{grid-template-columns:1fr}.update{text-align:left}.grid{grid-template-columns:repeat(2,1fr)}} @media(max-width:650px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.sum{min-width:33%}}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+<div><h1>🏔️ Alps Trip — Weather</h1><div class="sub">28 September – 7 October 2026 · 🇩🇪 Germany · 🇨🇭 Switzerland · 🇦🇹 Austria</div></div>
+<div class="summary">
+ <div class="sum"><div class="num" id="goodN">0</div><div class="label">🟢 Good</div></div>
+ <div class="sum"><div class="num" id="watchN">0</div><div class="label">🟡 Watch</div></div>
+ <div class="sum"><div class="num" id="badN">0</div><div class="label">🔴 Consider change</div></div>
+</div>
+<div class="update"><div id="updated">Loading forecasts…</div><button onclick="loadAll()">↻ Refresh</button></div>
+</header>
+<main class="grid" id="grid"></main>
+<footer>Live forecast: Open-Meteo · Mountain conditions can differ substantially from valley forecasts. Check local mountain/cable-car information before high-altitude hikes.</footer>
+</div>
+<script>
+const trip=[
+{d:1,date:"2026-09-28",place:"Europa-Park / Rust",country:"Germany",lat:48.266,lon:7.722,type:"park"},
+{d:2,date:"2026-09-29",place:"Solothurn",country:"Switzerland",lat:47.208,lon:7.537,type:"city"},
+{d:3,date:"2026-09-30",place:"Lauterbrunnen",country:"Switzerland",lat:46.594,lon:7.908,type:"outdoor"},
+{d:4,date:"2026-10-01",place:"Zürich → Egnach",country:"Switzerland",lat:47.474,lon:9.379,type:"city"},
+{d:5,date:"2026-10-02",place:"Eibsee / Garmisch",country:"Germany",lat:47.457,lon:10.990,type:"outdoor"},
+{d:6,date:"2026-10-03",place:"Ehrwald / Seebensee",country:"Austria",lat:47.366,lon:10.933,type:"mountain"},
+{d:7,date:"2026-10-04",place:"Innsbruck / Ötztal",country:"Austria",lat:47.115,lon:10.949,type:"mixed"},
+{d:8,date:"2026-10-05",place:"Krimml Waterfalls",country:"Austria",lat:47.217,lon:12.174,type:"outdoor"},
+{d:9,date:"2026-10-06",place:"Achensee / Rofan",country:"Austria",lat:47.441,lon:11.762,type:"mountain"},
+{d:10,date:"2026-10-07",place:"Munich",country:"Germany",lat:48.137,lon:11.575,type:"travel"}
+];
+const wx={0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Cloudy"],45:["🌫️","Fog"],48:["🌫️","Rime fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Heavy drizzle"],61:["🌦️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],80:["🌦️","Rain showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm / hail"],99:["⛈️","Severe thunderstorm / hail"]};
+function fmtDate(s){return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short"}).format(new Date(s+"T12:00:00"))}
+function judge(t,x){
+ const mountain=t.type==="mountain", outdoor=["mountain","outdoor","park"].includes(t.type);
+ let score=0,reasons=[];
+ if(x.rain>=70){score+=2;reasons.push("high rain chance")} else if(x.rain>=40){score++;reasons.push("possible rain")}
+ if(x.gust>=55){score+=2;reasons.push("strong gusts")} else if(x.gust>=35 && mountain){score++;reasons.push("windy")}
+ if(x.snow>0){score+=2;reasons.push("snow")}
+ if(mountain && x.min<=2){score++;reasons.push("cold at elevation")}
+ if([95,96,99].includes(x.code)){score+=3;reasons.push("thunderstorms")}
+ if(!outdoor && score>0) score--;
+ if(score>=3)return["bad","CONSIDER CHANGE",reasons.join(" · ")||"weather may affect plans"];
+ if(score>=1)return["watch","WATCH",reasons.join(" · ")||"monitor forecast"];
+ return["good","GOOD", outdoor?"Looks suitable for your plan":"No major weather issue"];
+}
+async function forecast(t){
+ const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum&timezone=auto&forecast_days=16`;
+ const r=await fetch(url); if(!r.ok)throw Error("Weather API "+r.status); const j=await r.json();
+ const i=j.daily.time.indexOf(t.date); if(i<0)return null;
+ return {code:j.daily.weather_code[i],max:Math.round(j.daily.temperature_2m_max[i]),min:Math.round(j.daily.temperature_2m_min[i]),rain:Math.round(j.daily.precipitation_probability_max[i]??0),gust:Math.round(j.daily.wind_gusts_10m_max[i]??0),snow:j.daily.snowfall_sum[i]??0};
+}
+function card(t,x){
+ let state,label,note,icon,desc;
+ if(!x){state="early";label="TOO EARLY";note="Outside the current forecast window";icon="◌";desc="Forecast not available yet"}
+ else{[state,label,note]=judge(t,x); [icon,desc]=wx[x.code]||["🌡️","Weather"]; }
+ return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="place">${t.place}</div><div class="country">${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain}%</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
+}
+async function loadAll(){
+ document.getElementById("updated").textContent="Updating…"; const grid=document.getElementById("grid"); grid.innerHTML="";
+ const results=await Promise.all(trip.map(async t=>{try{return await forecast(t)}catch(e){return null}}));
+ let counts={good:0,watch:0,bad:0};
+ grid.innerHTML=trip.map((t,i)=>{let x=results[i]; if(x){counts[judge(t,x)[0]]++} return card(t,x)}).join("");
+ goodN.textContent=counts.good; watchN.textContent=counts.watch; badN.textContent=counts.bad;
+ updated.textContent="Updated "+new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date());
+}
+loadAll(); setInterval(loadAll,30*60*1000);
+</script></body></html>
