@@ -19,6 +19,10 @@ h1{margin:0;font-size:clamp(25px,2.6vw,42px);letter-spacing:-1px}.sub{color:var(
 .place{font-size:18px;font-weight:800;margin:8px 0 0}.country{color:var(--muted);font-size:11px}.weather{font-size:38px;line-height:1;margin:9px 0 3px}.temps{font-size:23px;font-weight:800}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;color:#d8e6f1;margin:4px 0;font-size:13px}.confidence{font-size:12px;font-weight:800;margin:4px 0}.high{color:#8be68a}.medium{color:#ffd264}.low{color:#ff8d93}.desc{font-size:12px;color:#e7f0f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status{margin-top:auto;border-radius:11px;padding:7px 9px;color:#071a2b;font-weight:900;font-size:15px}.status small{display:block;font-size:10px;font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
 .hint{position:absolute;right:11px;bottom:53px;color:#9fb7c8;font-size:10px}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:20;padding:5vh 6vw}.modal.open{display:flex}.modalbox{margin:auto;width:min(900px,100%);max-height:90vh;overflow:auto;background:#0b2b43;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}.modalhead{display:flex;justify-content:space-between;gap:15px}.close{border:1px solid var(--line);background:rgba(255,255,255,.1);color:white;border-radius:10px;padding:7px 11px;font-weight:800}.modeltable{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}.modeltable th,.modeltable td{padding:9px;border-bottom:1px solid var(--line);text-align:right}.modeltable th:first-child,.modeltable td:first-child{text-align:left}.explain{color:var(--muted);font-size:13px;margin-top:12px}
+.rainsummary{margin:14px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.06)}
+.rainsummary strong{font-size:16px}.rainsummary .subline{color:var(--muted);font-size:12px;margin-top:4px}
+.hourlywrap{overflow-x:auto;margin-top:8px}.hourly{width:100%;border-collapse:collapse;font-size:13px}.hourly th,.hourly td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.hourly th:first-child,.hourly td:first-child{text-align:left}.wetrow{background:rgba(70,150,210,.12)}.bestrow{background:rgba(98,213,95,.08)}
+.sectiontitle{font-size:15px;font-weight:900;margin:16px 0 5px}
 footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 @media(max-width:1050px){header{grid-template-columns:1fr}.update{text-align:left}.grid{grid-template-columns:repeat(2,1fr)}.card{height:auto;min-height:300px}}@media(max-width:650px){.wrap{padding:10px}.grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.sum{min-width:33%}}
 </style>
@@ -68,13 +72,20 @@ function judge(t,x){
 }
 async function oneModel(t,model){
  const elevation=t.elev?`&elevation=${t.elev}`:"";
- const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&models=${model}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum,precipitation_hours&timezone=auto&forecast_days=16`;
+ const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&models=${model}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum,precipitation_hours&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,weather_code,wind_gusts_10m,freezing_level_height&timezone=auto&forecast_days=16`;
  const r=await fetch(url);if(!r.ok)return null;const j=await r.json();const i=j.daily?.time?.indexOf(t.date)??-1;if(i<0)return null;
  const get=(name)=>{const v=j.daily?.[name]?.[i];return (v===null||v===undefined||!Number.isFinite(Number(v)))?null:Number(v)};
  const code=get("weather_code"),max=get("temperature_2m_max"),min=get("temperature_2m_min");
  // A model is only valid for comparison when it has a real weather code and both temperatures.
  if(code===null||max===null||min===null)return null;
- return {model,code,max,min,rain:get("precipitation_probability_max"),gust:get("wind_gusts_10m_max"),snow:get("snowfall_sum"),precip:get("precipitation_sum"),rainHours:get("precipitation_hours")};
+ const hourly=[];
+ const times=j.hourly?.time||[];
+ for(let h=0;h<times.length;h++){
+   if(!times[h].startsWith(t.date))continue;
+   const hv=name=>{const v=j.hourly?.[name]?.[h];return (v===null||v===undefined||!Number.isFinite(Number(v)))?null:Number(v)};
+   hourly.push({time:times[h],temp:hv("temperature_2m"),feel:hv("apparent_temperature"),pop:hv("precipitation_probability"),precip:hv("precipitation"),rain:hv("rain"),showers:hv("showers"),snow:hv("snowfall"),code:hv("weather_code"),gust:hv("wind_gusts_10m"),freeze:hv("freezing_level_height")});
+ }
+ return {model,code,max,min,rain:get("precipitation_probability_max"),gust:get("wind_gusts_10m_max"),snow:get("snowfall_sum"),precip:get("precipitation_sum"),rainHours:get("precipitation_hours"),hourly};
 }
 function representativeCode(m){
  const severity=c=>({99:9,96:9,95:8,82:7,75:7,73:6,71:5,65:6,63:5,61:4,81:5,80:4,55:4,53:3,51:2,48:2,45:2,3:1,2:1,1:0,0:0}[c]??0);
@@ -103,10 +114,43 @@ function card(t,x,i){
  return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 let latest=[];
+function hourLabel(iso){return iso.slice(11,16)}
+function dayPart(h){return h<6?"night":h<12?"morning":h<18?"afternoon":"evening"}
+function wetHour(h){return (h.precip??0)>=0.1||(h.rain??0)>=0.1||(h.showers??0)>=0.1||(h.snow??0)>0}
+function hourlyConsensus(x){
+ // Use ECMWF as the timeline when available; otherwise the first valid model.
+ const base=x.details.find(v=>v.label==="ECMWF"&&v.hourly?.length)||x.details.find(v=>v.hourly?.length);
+ if(!base)return null;
+ const hs=base.hourly,wet=hs.filter(wetHour);
+ let summary="No meaningful precipitation expected",sub="Hourly forecast is currently mostly dry.";
+ if(wet.length){
+   const parts=[...new Set(wet.map(h=>dayPart(Number(h.time.slice(11,13)))))];
+   const first=hourLabel(wet[0].time),last=hourLabel(wet[wet.length-1].time);
+   if(parts.length===1)summary=`Precipitation mainly in the ${parts[0]}`;
+   else summary=`Precipitation window roughly ${first}–${last}`;
+   sub=`About ${wet.length} wet hour${wet.length===1?"":"s"} in the reference hourly model. Timing can still shift.`;
+ }
+ // Simple "best outdoor window": longest dry block between 07:00 and 19:00.
+ const daylight=hs.filter(h=>{const q=Number(h.time.slice(11,13));return q>=7&&q<=19});
+ let best=[],cur=[];for(const h of daylight){if(!wetHour(h)){cur.push(h);if(cur.length>best.length)best=[...cur]}else cur=[]}
+ let bestText=best.length>=2?`Best dry window: ${hourLabel(best[0].time)}–${hourLabel(best[best.length-1].time)}`:"No long dry daytime window identified";
+ return {base,hs,summary,sub,bestText};
+}
+function weatherIcon(code){return (wx[code]||["🌦️","Mixed"])[0]}
 function showDetail(i){
  const t=trip[i],x=latest[i];if(!x)return;
+ const hc=hourlyConsensus(x);
+ const rainBlock=hc?`<div class="rainsummary"><strong>🌧️ ${hc.summary}</strong><div class="subline">${hc.sub} · <b>${hc.bestText}</b>${t.type==="mountain"?" · Mountain timing can change quickly.":""}</div></div>`:"";
+ let hourlyBlock="";
+ if(hc){
+   const rows=hc.hs.map(h=>{
+     const wet=wetHour(h),hour=Number(h.time.slice(11,13)),daytime=hour>=7&&hour<=19;
+     return `<tr class="${wet?"wetrow":(!wet&&daytime?"bestrow":"")}"><td>${hourLabel(h.time)}</td><td>${weatherIcon(h.code)}</td><td>${h.temp==null?"—":Math.round(h.temp)+"°"}</td><td>${h.feel==null?"—":Math.round(h.feel)+"°"}</td><td>${h.pop==null?"—":Math.round(h.pop)+"%"}</td><td>${h.precip==null?"—":h.precip.toFixed(1)+" mm"}</td><td>${h.gust==null?"—":Math.round(h.gust)+" km/h"}</td>${t.type==="mountain"?`<td>${h.freeze==null?"—":Math.round(h.freeze)+" m"}</td>`:""}</tr>`;
+   }).join("");
+   hourlyBlock=`<div class="sectiontitle">Hourly forecast · ${hc.base.label}</div><div class="hourlywrap"><table class="hourly"><thead><tr><th>Time</th><th></th><th>Temp</th><th>Feels</th><th>Rain %</th><th>Precip.</th><th>Gusts</th>${t.type==="mountain"?"<th>Freezing level</th>":""}</tr></thead><tbody>${rows}</tbody></table></div>`;
+ }
  const rows=x.details.map(v=>`<tr><td>${v.label}</td><td>${v.min==null||v.max==null?"—":v.min.toFixed(0)+"–"+v.max.toFixed(0)+"°C"}</td><td>${v.rain==null?"—":Math.round(v.rain)+"%"}</td><td>${v.rainHours==null?"—":v.rainHours.toFixed(1)+"h"}</td><td>${v.precip==null?"—":v.precip.toFixed(1)+" mm"}</td><td>${v.gust==null?"—":Math.round(v.gust)+" km/h"}</td></tr>`).join("");
- document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Confidence compares the available models. Regional models may disappear on later dates because their forecast horizon is shorter. Mountain forecasts use the dashboard's representative elevation where configured.</div>`;
+ document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div>${rainBlock}${hourlyBlock}<div class="sectiontitle">Daily model comparison</div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Hourly timing uses ECMWF when available (otherwise the first valid model) because mixing model hours into one exact timeline can imply false precision. The daily table below still shows the independent models. Rain timing and the suggested dry window are planning aids, not guarantees. Regional models may have shorter forecast horizons.</div>`;
  document.getElementById("modal").classList.add("open");
 }
 function closeDetail(e){if(e)e.stopPropagation();document.getElementById("modal").classList.remove("open")}
