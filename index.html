@@ -38,6 +38,22 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
   .card .route{font-size:10px}
 }
 
+
+/* V5.4 — iPad-first readability */
+@media (min-width: 900px) and (max-width: 1400px) {
+  .grid { grid-template-columns: repeat(4, minmax(0,1fr)) !important; gap:12px !important; }
+  .card { min-height: 330px !important; height:auto !important; overflow:hidden; }
+  .place { font-size:19px !important; line-height:1.08 !important; }
+  .top { gap:6px !important; }
+  .route { white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .status { margin-top:auto !important; position:static !important; }
+}
+@media (min-width: 700px) and (max-width: 899px) {
+  .grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+}
+/* Sunrise/sunset line on each card */
+.sunline{font-size:12px;font-weight:800;color:#f1d78a;margin:4px 0 2px;white-space:nowrap}
+
 </style>
 
 <link rel="apple-touch-icon" href="alps-weather-icon.png">
@@ -134,7 +150,7 @@ function card(t,x,i){
  let state,label,note,icon,desc,conf="";
  if(!x){state="early";label="TOO EARLY";note="Outside forecast window";icon="◌";desc="Forecast not available yet"}
  else{[state,label,note]=judge(t,x);[icon,desc]=wx[x.code]||["🌦️","Mixed weather"];conf=`<div class="confidence ${x.confidence.toLowerCase()}">${x.confidence==="HIGH"?"✓":x.confidence==="MEDIUM"?"≈":"⚠"} ${x.confidence} confidence · ${x.modelCount} models</div>`}
- return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div><div style="font-size:11px;color:#f1d78a;margin-top:3px">🌅 ${sunTime(x.sunrise)} &nbsp; 🌇 ${sunTime(x.sunset)}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
+ return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="sunline">🌅 ${sunTime(x.sunrise)} &nbsp; 🌇 ${sunTime(x.sunset)}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div><div style="font-size:11px;color:#f1d78a;margin-top:3px">🌅 ${sunTime(x.sunrise)} &nbsp; 🌇 ${sunTime(x.sunset)}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 let latest=[];
 function hourLabel(iso){return iso.slice(11,16)}
