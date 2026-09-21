@@ -16,7 +16,7 @@ h1{margin:0;font-size:clamp(28px,3.1vw,48px);letter-spacing:-1px}.sub{color:var(
 .summary{display:flex;border:1px solid var(--line);border-radius:18px;background:rgba(5,26,43,.52);overflow:hidden}.sum{flex:1;padding:12px 16px;min-width:130px}.sum+.sum{border-left:1px solid var(--line)}.num{font-size:30px;font-weight:800}.label{font-weight:700}
 .update{text-align:right;color:var(--muted);font-size:14px}.update button{margin-top:8px;border:1px solid var(--line);background:rgba(255,255,255,.1);color:#fff;padding:9px 13px;border-radius:12px;font-weight:700}
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.card{min-height:285px;border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(180deg,rgba(18,68,101,.93),rgba(5,37,56,.96));display:flex;flex-direction:column;box-shadow:0 12px 28px rgba(0,0,0,.18)}
-.top{display:flex;justify-content:space-between;gap:8px}.day{font-weight:800;font-size:19px}.date{color:var(--muted)}.place{font-size:20px;font-weight:800;margin:10px 0 2px}.route{font-size:13px;color:#fff;background:rgba(255,255,255,.09);padding:6px 8px;border-radius:9px;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.focus{color:var(--muted);font-size:12px}.country{color:var(--muted);font-size:12px}.weather{font-size:54px;line-height:1;margin:18px 0 8px}.temps{font-size:27px;font-weight:800}.details{display:flex;gap:13px;flex-wrap:wrap;color:#d8e6f1;margin:7px 0}.desc{color:#e7f0f6;min-height:24px}.status{margin-top:auto;border-radius:13px;padding:10px 12px;color:#071a2b;font-weight:900;font-size:17px}.status small{display:block;font-size:12px;font-weight:700;margin-top:2px}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
+.top{display:flex;justify-content:space-between;gap:8px}.day{font-weight:800;font-size:19px}.date{color:var(--muted)}.place{font-size:20px;font-weight:800;margin:10px 0 2px}.route{font-size:13px;color:#fff;background:rgba(255,255,255,.09);padding:6px 8px;border-radius:9px;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.focus{color:var(--muted);font-size:12px}.country{color:var(--muted);font-size:12px}.weather{font-size:54px;line-height:1;margin:18px 0 8px}.temps{font-size:27px;font-weight:800}.details{display:flex;gap:10px;flex-wrap:wrap;color:#d8e6f1;margin:7px 0}.models{font-size:12px;color:#c8d7e5;margin:3px 0 7px}.agree{font-weight:800}.spread{font-size:12px;color:#e7f0f6;margin-top:3px}.desc{color:#e7f0f6;min-height:24px}.status{margin-top:auto;border-radius:13px;padding:10px 12px;color:#071a2b;font-weight:900;font-size:17px}.status small{display:block;font-size:12px;font-weight:700;margin-top:2px}.good{background:var(--good)}.watch{background:var(--watch)}.bad{background:var(--bad)}.early{background:var(--early)}
 footer{text-align:center;color:#a9bfce;padding:18px 4px 4px;font-size:12px}
 @media(max-width:1050px){header{grid-template-columns:1fr}.update{text-align:left}.grid{grid-template-columns:repeat(2,1fr)}} @media(max-width:650px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.sum{min-width:33%}}
 </style>
@@ -52,34 +52,57 @@ function fmtDate(s){return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:
 function judge(t,x){
  const mountain=t.type==="mountain", outdoor=["mountain","outdoor","park"].includes(t.type);
  let score=0,reasons=[];
- if(x.rain>=70){score+=2;reasons.push("high rain chance")} else if(x.rain>=40){score++;reasons.push("possible rain")}
+ if(x.rain!=null && x.rain>=70){score+=2;reasons.push("high rain chance")} else if(x.rain!=null && x.rain>=40){score++;reasons.push("possible rain")}
+ if(x.rainHours>=4){score+=2;reasons.push("several wet hours")} else if(x.rainHours>=1.5){score++;reasons.push("some wet hours")}
+ if(x.precip>=8){score+=2;reasons.push("significant precipitation")} else if(x.precip>=3){score++;reasons.push("wet")}
  if(x.gust>=55){score+=2;reasons.push("strong gusts")} else if(x.gust>=35 && mountain){score++;reasons.push("windy")}
  if(x.snow>0){score+=2;reasons.push("snow")}
  if(mountain && x.min<=2){score++;reasons.push("cold at elevation")}
- if([95,96,99].includes(x.code)){score+=3;reasons.push("thunderstorms")}
+ if(x.disagreement){score++;reasons.push("models disagree")}
  if(!outdoor && score>0) score--;
- if(score>=3)return["bad","CONSIDER CHANGE",reasons.join(" · ")||"weather may affect plans"];
+ if(x.modelCount>=2 && x.badish>=Math.ceil(x.modelCount*0.66) && score>=3)return["bad","CONSIDER CHANGE",reasons.join(" · ")];
  if(score>=1)return["watch","WATCH",reasons.join(" · ")||"monitor forecast"];
- return["good","GOOD", outdoor?"Looks suitable for your plan":"No major weather issue"];
+ return["good","GOOD", outdoor?"Models broadly support the plan":"No major weather issue"];
+}
+async function oneModel(t,model){
+ const elevation=t.elev?`&elevation=${t.elev}`:"";
+ const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&models=${model}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum,precipitation_hours&timezone=auto&forecast_days=16`;
+ const r=await fetch(url); if(!r.ok) return null; const j=await r.json();
+ const i=j.daily?.time?.indexOf(t.date)??-1; if(i<0)return null;
+ return {model,code:j.daily.weather_code[i],max:j.daily.temperature_2m_max[i],min:j.daily.temperature_2m_min[i],rain:j.daily.precipitation_probability_max?.[i]??null,gust:j.daily.wind_gusts_10m_max[i],snow:j.daily.snowfall_sum[i]??0,precip:j.daily.precipitation_sum[i]??0,rainHours:j.daily.precipitation_hours?.[i]??0};
 }
 async function forecast(t){
- const elevation=t.elev?`&elevation=${t.elev}`:"";
- const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum&hourly=rain,showers,snowfall&timezone=auto&forecast_days=16`;
- const r=await fetch(url); if(!r.ok)throw Error("Weather API "+r.status); const j=await r.json();
- const i=j.daily.time.indexOf(t.date); if(i<0)return null;
- let rainHours=0;
- for(let h=0;h<j.hourly.time.length;h++){
-   if(!j.hourly.time[h].startsWith(t.date)) continue;
-   const liquid=(j.hourly.rain?.[h]??0)+(j.hourly.showers?.[h]??0);
-   if(liquid>=0.1) rainHours++;
- }
- return {code:j.daily.weather_code[i],max:Math.round(j.daily.temperature_2m_max[i]),min:Math.round(j.daily.temperature_2m_min[i]),rain:Math.round(j.daily.precipitation_probability_max[i]??0),gust:Math.round(j.daily.wind_gusts_10m_max[i]??0),snow:j.daily.snowfall_sum[i]??0,rainHours,precip:Math.round((j.daily.precipitation_sum[i]??0)*10)/10};
+ // Use independent model families where available. Some shorter-range regional
+ // models simply return no value for dates outside their horizon.
+ const names=t.country==="Switzerland"
+   ? [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["meteoswiss_icon_seamless","MeteoSwiss"],["gfs_seamless","GFS"]]
+   : t.country==="Austria"
+   ? [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["geosphere_seamless","GeoSphere"],["gfs_seamless","GFS"]]
+   : [["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["gfs_seamless","GFS"]];
+ const raw=await Promise.all(names.map(async ([id,label])=>{let v=await oneModel(t,id); if(v)v.label=label; return v;}));
+ const m=raw.filter(Boolean); if(!m.length)return null;
+ const vals=k=>m.map(v=>v[k]).filter(v=>Number.isFinite(v));
+ const avg=k=>{const a=vals(k);return a.reduce((x,y)=>x+y,0)/a.length};
+ const min=k=>Math.min(...vals(k)), max=k=>Math.max(...vals(k));
+ const rainy=m.filter(v=>(v.precip??0)>=0.2).length;
+ const badish=m.filter(v=>(v.precip??0)>=3 || (v.gust??0)>=55 || (v.snow??0)>0).length;
+ const codes=m.map(v=>v.code); const code=codes.sort((a,b)=>codes.filter(x=>x===a).length-codes.filter(x=>x===b).length).pop();
+ return {
+  code,max:Math.round(avg("max")),min:Math.round(avg("min")),
+  rain:vals("rain").length?Math.round(avg("rain")):null,
+  gust:Math.round(max("gust")),snow:Math.round(avg("snow")*10)/10,
+  rainHours:Math.round(avg("rainHours")*10)/10,precip:Math.round(avg("precip")*10)/10,
+  models:m.map(v=>v.label),modelCount:m.length,rainy,badish,
+  tempRange:`${Math.round(min("min"))}–${Math.round(max("max"))}°`,
+  precipRange:`${Math.round(min("precip")*10)/10}–${Math.round(max("precip")*10)/10} mm`,
+  disagreement:(max("precip")-min("precip")>=3)||(max("max")-min("max")>=5)||(rainy>0&&rainy<m.length)
+ };
 }
 function card(t,x){
  let state,label,note,icon,desc;
  if(!x){state="early";label="TOO EARLY";note="Outside the current forecast window";icon="◌";desc="Forecast not available yet"}
  else{[state,label,note]=judge(t,x); [icon,desc]=wx[x.code]||["🌡️","Weather"]; }
- return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="focus">Weather focus · ${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain}%</span><span>🌧️ ${x.rainHours}h rain</span><span>☔ ${x.precip} mm</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
+ return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="focus">Weather focus · ${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours}h</span><span>☔ ${x.precip} mm</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div><div class="models"><span class="agree">${x.disagreement?"⚠️ Models differ":"✓ Models agree"}</span> · ${x.models.join(" · ")}<div class="spread">Model range: ${x.tempRange} · rain ${x.precipRange}</div></div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 async function loadAll(){
  document.getElementById("updated").textContent="Updating…"; const grid=document.getElementById("grid"); grid.innerHTML="";
