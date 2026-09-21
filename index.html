@@ -41,10 +41,10 @@ const trip=[
 {d:3,date:"2026-09-30",route:"Solothurn / Alchenstorf → Interlaken",place:"Lauterbrunnen",country:"Switzerland",lat:46.594,lon:7.908,type:"outdoor"},
 {d:4,date:"2026-10-01",route:"Interlaken → Egnach",place:"Zürich / Egnach",country:"Switzerland",lat:47.474,lon:9.379,type:"city"},
 {d:5,date:"2026-10-02",route:"Egnach → Biberwier",place:"Eibsee / Garmisch",country:"Germany",lat:47.457,lon:10.990,type:"outdoor"},
-{d:6,date:"2026-10-03",route:"Biberwier → Biberwier",place:"Seebensee / Drachensee",country:"Austria",lat:47.366,lon:10.933,type:"mountain"},
+{d:6,date:"2026-10-03",route:"Biberwier → Biberwier",place:"Seebensee / Drachensee",country:"Austria",lat:47.366,lon:10.933,elev:1850,type:"mountain"},
 {d:7,date:"2026-10-04",route:"Biberwier → Aschau im Zillertal",place:"Innsbruck / Ötztal",country:"Austria",lat:47.115,lon:10.949,type:"mixed"},
 {d:8,date:"2026-10-05",route:"Aschau im Zillertal → Achensee",place:"Krimml / Gerlos",country:"Austria",lat:47.217,lon:12.174,type:"outdoor"},
-{d:9,date:"2026-10-06",route:"Achensee → Tegernsee / Oedberg",place:"Rofan / Achensee",country:"Austria",lat:47.441,lon:11.762,type:"mountain"},
+{d:9,date:"2026-10-06",route:"Achensee → Tegernsee / Oedberg",place:"Rofan / Achensee",country:"Austria",lat:47.441,lon:11.762,elev:1800,type:"mountain"},
 {d:10,date:"2026-10-07",route:"Tegernsee / Oedberg → Munich Airport",place:"Munich",country:"Germany",lat:48.137,lon:11.575,type:"travel"}
 ];
 const wx={0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Cloudy"],45:["🌫️","Fog"],48:["🌫️","Rime fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Heavy drizzle"],61:["🌦️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],80:["🌦️","Rain showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm / hail"],99:["⛈️","Severe thunderstorm / hail"]};
@@ -63,16 +63,23 @@ function judge(t,x){
  return["good","GOOD", outdoor?"Looks suitable for your plan":"No major weather issue"];
 }
 async function forecast(t){
- const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum&timezone=auto&forecast_days=16`;
+ const elevation=t.elev?`&elevation=${t.elev}`:"";
+ const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum&hourly=rain,showers,snowfall&timezone=auto&forecast_days=16`;
  const r=await fetch(url); if(!r.ok)throw Error("Weather API "+r.status); const j=await r.json();
  const i=j.daily.time.indexOf(t.date); if(i<0)return null;
- return {code:j.daily.weather_code[i],max:Math.round(j.daily.temperature_2m_max[i]),min:Math.round(j.daily.temperature_2m_min[i]),rain:Math.round(j.daily.precipitation_probability_max[i]??0),gust:Math.round(j.daily.wind_gusts_10m_max[i]??0),snow:j.daily.snowfall_sum[i]??0};
+ let rainHours=0;
+ for(let h=0;h<j.hourly.time.length;h++){
+   if(!j.hourly.time[h].startsWith(t.date)) continue;
+   const liquid=(j.hourly.rain?.[h]??0)+(j.hourly.showers?.[h]??0);
+   if(liquid>=0.1) rainHours++;
+ }
+ return {code:j.daily.weather_code[i],max:Math.round(j.daily.temperature_2m_max[i]),min:Math.round(j.daily.temperature_2m_min[i]),rain:Math.round(j.daily.precipitation_probability_max[i]??0),gust:Math.round(j.daily.wind_gusts_10m_max[i]??0),snow:j.daily.snowfall_sum[i]??0,rainHours,precip:Math.round((j.daily.precipitation_sum[i]??0)*10)/10};
 }
 function card(t,x){
  let state,label,note,icon,desc;
  if(!x){state="early";label="TOO EARLY";note="Outside the current forecast window";icon="◌";desc="Forecast not available yet"}
  else{[state,label,note]=judge(t,x); [icon,desc]=wx[x.code]||["🌡️","Weather"]; }
- return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="focus">Weather focus · ${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain}%</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
+ return `<section class="card"><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="focus">Weather focus · ${t.country}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="details"><span>💧 ${x.rain}%</span><span>🌧️ ${x.rainHours}h rain</span><span>☔ ${x.precip} mm</span><span>💨 ${x.gust} km/h</span>${x.snow?`<span>❄️ ${x.snow} cm</span>`:""}</div>`:`<div class="temps">—</div><div class="details"><span>Waiting for forecast</span></div>`}<div class="desc">${desc}</div><div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 async function loadAll(){
  document.getElementById("updated").textContent="Updating…"; const grid=document.getElementById("grid"); grid.innerHTML="";
