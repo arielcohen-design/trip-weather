@@ -71,7 +71,13 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 /* Never let helper text sit on top of the status panel. */
 .card{padding-bottom:14px !important}
 
-.settingsbox{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05)}.settingsbox input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#071a2b;color:white;margin:8px 0}.settingsrow{display:flex;gap:8px;flex-wrap:wrap}.okmsg{color:#8be68a;font-weight:800}.errmsg{color:#ff9ba0;font-weight:800}.muted{color:var(--muted);font-size:12px}</style>
+.settingsbox{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05)}.settingsbox input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#071a2b;color:white;margin:8px 0}.settingsrow{display:flex;gap:8px;flex-wrap:wrap}.okmsg{color:#8be68a;font-weight:800}.errmsg{color:#ff9ba0;font-weight:800}.muted{color:var(--muted);font-size:12px}
+.accubox{margin:12px 0;padding:12px 14px;border:1px solid rgba(255,196,66,.45);border-radius:14px;background:rgba(255,196,66,.07)}
+.accutitle{font-size:15px;font-weight:900}.accugrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:9px}
+.accumetric{background:rgba(255,255,255,.05);padding:8px;border-radius:9px;text-align:center}.accumetric b{display:block;font-size:16px}.accumetric span{font-size:10px;color:var(--muted)}
+.accuphrase{font-size:12px;color:#e7f0f6;margin-top:8px}.accunote{font-size:11px;color:var(--muted);margin-top:7px}
+@media(max-width:700px){.accugrid{grid-template-columns:repeat(2,1fr)}}
+</style>
 
 <link rel="apple-touch-icon" href="alps-weather-icon.png">
 <link rel="icon" type="image/png" href="alps-weather-icon.png">
@@ -174,6 +180,43 @@ function hourLabel(iso){return iso.slice(11,16)}
 function sunTime(iso){return iso?iso.slice(11,16):"—"}
 function dayPart(h){return h<6?"night":h<12?"morning":h<18?"afternoon":"evening"}
 function wetHour(h){return (h.precip??0)>=0.1||(h.rain??0)>=0.1||(h.showers??0)>=0.1||(h.snow??0)>0}
+
+const accuCache={};
+async function accuDailyFor(t){
+ const key=localStorage.getItem(ACCU_KEY_STORAGE); if(!key)return {status:"not-configured"};
+ const ck=`${t.lat},${t.lon},${t.date}`; if(accuCache[ck])return accuCache[ck];
+ const headers={"Authorization":`Bearer ${key}`};
+ try{
+  const lr=await fetch(`https://dataservice.accuweather.com/locations/v1/geoposition/search?q=${encodeURIComponent(t.lat+","+t.lon)}`,{headers});
+  if(!lr.ok)return {status:"error",message:`Location HTTP ${lr.status}`};
+  const ld=await lr.json(),loc=Array.isArray(ld)?ld[0]:ld;if(!loc?.Key)return {status:"error",message:"No AccuWeather location key"};
+  const fr=await fetch(`https://dataservice.accuweather.com/forecasts/v1/daily/15day/${encodeURIComponent(loc.Key)}?details=true&metric=true`,{headers});
+  if(!fr.ok)return {status:"error",message:`Forecast HTTP ${fr.status}`};
+  const fd=await fr.json(),days=fd.DailyForecasts||[];
+  const d=days.find(v=>(v.Date||"").slice(0,10)===t.date);
+  if(!d)return {status:"outside",location:loc.LocalizedName||loc.EnglishName||t.place};
+  const val=o=>o&&Number.isFinite(Number(o.Value))?Number(o.Value):null;
+  const day=d.Day||{},night=d.Night||{};
+  const result={status:"ok",location:loc.LocalizedName||loc.EnglishName||t.place,
+    min:val(d.Temperature?.Minimum),max:val(d.Temperature?.Maximum),
+    realMin:val(d.RealFeelTemperature?.Minimum),realMax:val(d.RealFeelTemperature?.Maximum),
+    rainProb:Math.max(day.RainProbability??day.PrecipitationProbability??0,night.RainProbability??night.PrecipitationProbability??0),
+    rainHours:(day.HoursOfRain??0)+(night.HoursOfRain??0),
+    precip:(val(day.Rain)||0)+(val(night.Rain)||0),
+    phrase:day.LongPhrase||day.ShortPhrase||day.IconPhrase||"",
+    nightPhrase:night.LongPhrase||night.ShortPhrase||night.IconPhrase||"",
+    gust:Math.max(val(day.WindGust?.Speed)||0,val(night.WindGust?.Speed)||0)
+  };
+  accuCache[ck]=result;return result;
+ }catch(e){return {status:"error",message:"Browser/network error"}}
+}
+function accuHTML(a){
+ if(!a||a.status==="not-configured")return `<div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Not configured on this device. Open ⚙️ Settings to add the API key.</div></div>`;
+ if(a.status==="outside")return `<div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">This trip date is not currently returned by the AccuWeather 15-day forecast.</div></div>`;
+ if(a.status!=="ok")return `<div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Could not load: ${a.message||"unknown error"}</div></div>`;
+ const f=(v,s="")=>v==null?"—":`${Math.round(v*10)/10}${s}`;
+ return `<div class="accubox"><div class="accutitle">AccuWeather · ${a.location}</div><div class="accugrid"><div class="accumetric"><b>${f(a.min,"°")}–${f(a.max,"°C")}</b><span>temperature</span></div><div class="accumetric"><b>${a.realMin==null?"—":f(a.realMin,"°")+"–"+f(a.realMax,"°C")}</b><span>RealFeel</span></div><div class="accumetric"><b>${f(a.rainProb,"%")}</b><span>rain chance</span></div><div class="accumetric"><b>${f(a.rainHours,"h")}</b><span>rain hours</span></div><div class="accumetric"><b>${f(a.precip," mm")}</b><span>rain amount</span></div></div><div class="accuphrase">☀️ Day: ${a.phrase||"—"}${a.nightPhrase?`<br>🌙 Night: ${a.nightPhrase}`:""}</div><div class="accunote">AccuWeather is shown as a separate source and does not yet change GOOD/WATCH or model confidence.</div></div>`;
+}
 function hourlyConsensus(x){
  // Use ECMWF as the timeline when available; otherwise the first valid model.
  const base=x.details.find(v=>v.label==="ECMWF"&&v.hourly?.length)||x.details.find(v=>v.hourly?.length);
@@ -194,7 +237,7 @@ function hourlyConsensus(x){
  return {base,hs,summary,sub,bestText};
 }
 function weatherIcon(code){return (wx[code]||["🌦️","Mixed"])[0]}
-function showDetail(i){
+async function showDetail(i){
  const t=trip[i],x=latest[i];if(!x)return;
  const hc=hourlyConsensus(x);
  const rainBlock=hc?`<div class="rainsummary"><strong>🌧️ ${hc.summary}</strong><div class="subline">${hc.sub} · <b>${hc.bestText}</b>${t.type==="mountain"?" · Mountain timing can change quickly.":""}</div></div>`:"";
@@ -207,8 +250,10 @@ function showDetail(i){
    hourlyBlock=`<div class="sectiontitle">Hourly forecast · ${hc.base.label}</div><div class="hourlywrap"><table class="hourly"><thead><tr><th>Time</th><th></th><th>Temp</th><th>Feels</th><th>Rain %</th><th>Precip.</th><th>Gusts</th>${t.type==="mountain"?"<th>Freezing level</th>":""}</tr></thead><tbody>${rows}</tbody></table></div>`;
  }
  const rows=x.details.map(v=>`<tr><td>${v.label}</td><td>${v.min==null||v.max==null?"—":v.min.toFixed(0)+"–"+v.max.toFixed(0)+"°C"}</td><td>${v.rain==null?"—":Math.round(v.rain)+"%"}</td><td>${v.rainHours==null?"—":v.rainHours.toFixed(1)+"h"}</td><td>${v.precip==null?"—":v.precip.toFixed(1)+" mm"}</td><td>${v.gust==null?"—":Math.round(v.gust)+" km/h"}</td></tr>`).join("");
- document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div><div style="margin-top:7px;font-weight:900;color:#f1d78a;font-size:15px">🌅 Sunrise ${sunTime(x?.sunrise)} &nbsp;&nbsp; 🌇 Sunset ${sunTime(x?.sunset)}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div>${rainBlock}${hourlyBlock}<div class="sectiontitle">Daily model comparison</div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Hourly timing uses ECMWF when available (otherwise the first valid model) because mixing model hours into one exact timeline can imply false precision. The daily table below still shows the independent models. Rain timing and the suggested dry window are planning aids, not guarantees. Regional models may have shorter forecast horizons.</div>`;
+ document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div><div style="margin-top:7px;font-weight:900;color:#f1d78a;font-size:15px">🌅 Sunrise ${sunTime(x?.sunrise)} &nbsp;&nbsp; 🌇 Sunset ${sunTime(x?.sunset)}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div>${rainBlock}<div id="accuPanel"><div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Loading AccuWeather comparison…</div></div></div>${hourlyBlock}<div class="sectiontitle">Open-Meteo model comparison</div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Hourly timing uses ECMWF when available (otherwise the first valid model) because mixing model hours into one exact timeline can imply false precision. The daily table below still shows the independent models. Rain timing and the suggested dry window are planning aids, not guarantees. Regional models may have shorter forecast horizons.</div>`;
  document.getElementById("modal").classList.add("open");
+ const a=await accuDailyFor(t);
+ const panel=document.getElementById("accuPanel");if(panel)panel.innerHTML=accuHTML(a);
 }
 function closeDetail(e){if(e)e.stopPropagation();document.getElementById("modal").classList.remove("open")}
 async function loadAll(){
