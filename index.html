@@ -102,16 +102,16 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 </div>
 <script>
 const trip=[
-{d:1,date:"2026-09-28",route:"Munich Airport → Rust",place:"Europa-Park / Rust",country:"Germany",lat:48.266,lon:7.722,type:"park"},
-{d:2,date:"2026-09-29",route:"Rust → Solothurn / Alchenstorf",place:"Solothurn / Alchenstorf",country:"Switzerland",lat:47.208,lon:7.537,type:"city"},
-{d:3,date:"2026-09-30",route:"Solothurn / Alchenstorf → Interlaken",place:"Lauterbrunnen",country:"Switzerland",lat:46.594,lon:7.908,type:"outdoor"},
-{d:4,date:"2026-10-01",route:"Interlaken → Egnach",place:"Zürich / Egnach",country:"Switzerland",lat:47.474,lon:9.379,type:"city"},
-{d:5,date:"2026-10-02",route:"Egnach → Biberwier",place:"Eibsee / Garmisch",country:"Germany",lat:47.457,lon:10.990,type:"outdoor"},
-{d:6,date:"2026-10-03",route:"Biberwier → Biberwier",place:"Seebensee / Drachensee",country:"Austria",lat:47.366,lon:10.933,elev:1850,type:"mountain"},
-{d:7,date:"2026-10-04",route:"Biberwier → Aschau im Zillertal",place:"Innsbruck / Ötztal",country:"Austria",lat:47.115,lon:10.949,type:"mixed"},
-{d:8,date:"2026-10-05",route:"Aschau im Zillertal → Achensee",place:"Krimml / Gerlos",country:"Austria",lat:47.217,lon:12.174,type:"outdoor"},
-{d:9,date:"2026-10-06",route:"Achensee → Tegernsee / Oedberg",place:"Rofan / Achensee",country:"Austria",lat:47.441,lon:11.762,elev:1800,type:"mountain"},
-{d:10,date:"2026-10-07",route:"Tegernsee / Oedberg → Munich Airport",place:"Munich",country:"Germany",lat:48.137,lon:11.575,type:"travel"}
+{d:1,date:"2026-09-28",place:"Munich Airport",country:"Germany",lat:48.354,lon:11.786,type:"travel"},
+{d:2,date:"2026-09-29",place:"Europa-Park / Rust",country:"Germany",lat:48.266,lon:7.722,type:"park"},
+{d:3,date:"2026-09-30",place:"Solothurn / Alchenstorf",country:"Switzerland",lat:47.126,lon:7.637,type:"city"},
+{d:4,date:"2026-10-01",place:"Interlaken / Unterseen",country:"Switzerland",lat:46.686,lon:7.850,type:"city"},
+{d:5,date:"2026-10-02",place:"Camping Seehorn / Egnach",country:"Switzerland",lat:47.536,lon:9.400,type:"city"},
+{d:6,date:"2026-10-03",place:"Biberwier / Alpencamp Marienberg",country:"Austria",lat:47.375,lon:10.892,type:"mixed"},
+{d:7,date:"2026-10-04",place:"Biberwier / Alpencamp Marienberg",country:"Austria",lat:47.375,lon:10.892,type:"mixed"},
+{d:8,date:"2026-10-05",place:"Aschau im Zillertal / Aufenfeld",country:"Austria",lat:47.265,lon:11.902,type:"mixed"},
+{d:9,date:"2026-10-06",place:"Alpencaravanpark Achensee",country:"Austria",lat:47.499,lon:11.706,type:"outdoor"},
+{d:10,date:"2026-10-07",place:"Camping Tegernsee / Oedberg",country:"Germany",lat:47.744,lon:11.772,type:"travel"}
 ];
 const wx={0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Cloudy"],45:["🌫️","Fog"],48:["🌫️","Rime fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Heavy drizzle"],61:["🌦️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],80:["🌦️","Rain showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm / hail"],99:["⛈️","Severe thunderstorm / hail"]};
 function fmtDate(s){return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short"}).format(new Date(s+"T12:00:00"))}
@@ -173,7 +173,7 @@ function card(t,x,i){
  let state,label,note,icon,desc,conf="";
  if(!x){state="early";label="TOO EARLY";note="Outside forecast window";icon="◌";desc="Forecast not available yet"}
  else{[state,label,note]=judge(t,x);[icon,desc]=wx[x.code]||["🌦️","Mixed weather"];conf=`<div class="confidence ${x.confidence.toLowerCase()}">${x.confidence==="HIGH"?"✓":x.confidence==="MEDIUM"?"≈":"⚠"} ${x.confidence} confidence · ${x.modelCount} models</div>`}
- return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="route">🚐 ${t.route}</div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="sunline">🌅 ${sunTime(x?.sunrise)} &nbsp; 🌇 ${sunTime(x?.sunset)}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
+ return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="sunline">🌅 ${sunTime(x?.sunrise)} &nbsp; 🌇 ${sunTime(x?.sunset)}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 let latest=[];
 function hourLabel(iso){return iso.slice(11,16)}
@@ -209,6 +209,33 @@ async function accuDailyFor(t){
   };
   accuCache[ck]=result;return result;
  }catch(e){return {status:"error",message:"Browser/network error"}}
+}
+
+async function accuHourlyFor(t){
+ const key=localStorage.getItem(ACCU_KEY_STORAGE); if(!key)return {status:"not-configured"};
+ const ck=`hourly:${t.lat},${t.lon},${t.date}`; if(accuCache[ck])return accuCache[ck];
+ const headers={"Authorization":`Bearer ${key}`};
+ try{
+  const lr=await fetch(`https://dataservice.accuweather.com/locations/v1/geoposition/search?q=${encodeURIComponent(t.lat+","+t.lon)}`,{headers});
+  if(!lr.ok)return {status:"error",message:`Location HTTP ${lr.status}`};
+  const ld=await lr.json(),loc=Array.isArray(ld)?ld[0]:ld;if(!loc?.Key)return {status:"error",message:"No AccuWeather location key"};
+  const hr=await fetch(`https://dataservice.accuweather.com/forecasts/v1/hourly/120hour/${encodeURIComponent(loc.Key)}?details=true&metric=true`,{headers});
+  if(!hr.ok)return {status:"error",message:`Hourly HTTP ${hr.status}`};
+  const hd=await hr.json();
+  const rows=(Array.isArray(hd)?hd:[]).filter(v=>(v.DateTime||"").slice(0,10)===t.date).map(v=>{
+    const n=x=>x&&Number.isFinite(Number(x.Value))?Number(x.Value):null;
+    return {time:(v.DateTime||"").slice(11,16),phrase:v.IconPhrase||"",temp:n(v.Temperature),feels:n(v.RealFeelTemperature),
+      rainProb:v.RainProbability??v.PrecipitationProbability??null,precip:n(v.Rain)??n(v.TotalLiquid),gust:n(v.WindGust?.Speed)};
+  });
+  const result=rows.length?{status:"ok",rows}:{status:"outside"};accuCache[ck]=result;return result;
+ }catch(e){return {status:"error",message:"Browser/network error"}}
+}
+function accuWeatherEmoji(phrase=""){
+ const p=phrase.toLowerCase();if(/thunder/.test(p))return "⛈️";if(/snow|flurr/.test(p))return "🌨️";
+ if(/rain|shower/.test(p))return "🌧️";if(/cloud/.test(p))return /sun|partly/.test(p)?"🌤️":"☁️";if(/sun|clear/.test(p))return "☀️";return "🌤️";
+}
+function accuHourlyHTML(h){
+ return `<div class="sectiontitle">Hourly forecast · AccuWeather</div><table><thead><tr><th>Time</th><th></th><th>Temp</th><th>Feels</th><th>Rain %</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${h.rows.map(r=>`<tr><td>${r.time}</td><td title="${r.phrase}">${accuWeatherEmoji(r.phrase)}</td><td>${r.temp==null?"—":Math.round(r.temp)+"°"}</td><td>${r.feels==null?"—":Math.round(r.feels)+"°"}</td><td>${r.rainProb==null?"—":Math.round(r.rainProb)+"%"}</td><td>${r.precip==null?"—":(Math.round(r.precip*10)/10)+" mm"}</td><td>${r.gust==null?"—":Math.round(r.gust)+" km/h"}</td></tr>`).join("")}</tbody></table><div class="accunote">Hourly source: AccuWeather.</div>`;
 }
 function accuHTML(a){
  if(!a||a.status==="not-configured")return `<div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Not configured on this device. Open ⚙️ Settings to add the API key.</div></div>`;
@@ -250,10 +277,13 @@ async function showDetail(i){
    hourlyBlock=`<div class="sectiontitle">Hourly forecast · ${hc.base.label}</div><div class="hourlywrap"><table class="hourly"><thead><tr><th>Time</th><th></th><th>Temp</th><th>Feels</th><th>Rain %</th><th>Precip.</th><th>Gusts</th>${t.type==="mountain"?"<th>Freezing level</th>":""}</tr></thead><tbody>${rows}</tbody></table></div>`;
  }
  const rows=x.details.map(v=>`<tr><td>${v.label}</td><td>${v.min==null||v.max==null?"—":v.min.toFixed(0)+"–"+v.max.toFixed(0)+"°C"}</td><td>${v.rain==null?"—":Math.round(v.rain)+"%"}</td><td>${v.rainHours==null?"—":v.rainHours.toFixed(1)+"h"}</td><td>${v.precip==null?"—":v.precip.toFixed(1)+" mm"}</td><td>${v.gust==null?"—":Math.round(v.gust)+" km/h"}</td></tr>`).join("");
- document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · ${t.route}</div><div style="margin-top:7px;font-weight:900;color:#f1d78a;font-size:15px">🌅 Sunrise ${sunTime(x?.sunrise)} &nbsp;&nbsp; 🌇 Sunset ${sunTime(x?.sunset)}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div>${rainBlock}<div id="accuPanel"><div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Loading AccuWeather comparison…</div></div></div>${hourlyBlock}<div class="sectiontitle">Open-Meteo model comparison</div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Hourly timing uses ECMWF when available (otherwise the first valid model) because mixing model hours into one exact timeline can imply false precision. The daily table below still shows the independent models. Rain timing and the suggested dry window are planning aids, not guarantees. Regional models may have shorter forecast horizons.</div>`;
+ document.getElementById("modalContent").innerHTML=`<div class="modalhead"><div><h2 style="margin:0">Day ${t.d} · ${t.place}</h2><div style="color:#c8d7e5">${fmtDate(t.date)} · Start-of-day weather location</div><div style="margin-top:7px;font-weight:900;color:#f1d78a;font-size:15px">🌅 Sunrise ${sunTime(x?.sunrise)} &nbsp;&nbsp; 🌇 Sunset ${sunTime(x?.sunset)}</div></div><button class="close" onclick="closeDetail(event)">✕ Close</button></div>${rainBlock}<div id="accuPanel"><div class="accubox"><div class="accutitle">AccuWeather</div><div class="accunote">Loading AccuWeather comparison…</div></div></div><div id="hourlyPanel">${hourlyBlock}</div><div class="sectiontitle">Open-Meteo model comparison</div><table class="modeltable"><thead><tr><th>Model</th><th>Temp</th><th>Rain chance</th><th>Rain hours</th><th>Precip.</th><th>Gusts</th></tr></thead><tbody>${rows}</tbody></table><div class="explain">Hourly timing uses ECMWF when available (otherwise the first valid model) because mixing model hours into one exact timeline can imply false precision. The daily table below still shows the independent models. Rain timing and the suggested dry window are planning aids, not guarantees. Regional models may have shorter forecast horizons.</div>`;
  document.getElementById("modal").classList.add("open");
- const a=await accuDailyFor(t);
+ const [a,ah]=await Promise.all([accuDailyFor(t),accuHourlyFor(t)]);
  const panel=document.getElementById("accuPanel");if(panel)panel.innerHTML=accuHTML(a);
+ const hp=document.getElementById("hourlyPanel");
+ if(hp && ah?.status==="ok" && ah.rows?.length) hp.innerHTML=accuHourlyHTML(ah);
+ else if(hp){const title=hp.querySelector(".sectiontitle");if(title)title.textContent="Hourly forecast · ECMWF (AccuWeather hourly not available yet)";}
 }
 function closeDetail(e){if(e)e.stopPropagation();document.getElementById("modal").classList.remove("open")}
 async function loadAll(){
