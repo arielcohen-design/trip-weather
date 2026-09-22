@@ -71,7 +71,7 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 /* Never let helper text sit on top of the status panel. */
 .card{padding-bottom:14px !important}
 
-</style>
+.settingsbox{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05)}.settingsbox input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#071a2b;color:white;margin:8px 0}.settingsrow{display:flex;gap:8px;flex-wrap:wrap}.okmsg{color:#8be68a;font-weight:800}.errmsg{color:#ff9ba0;font-weight:800}.muted{color:var(--muted);font-size:12px}</style>
 
 <link rel="apple-touch-icon" href="alps-weather-icon.png">
 <link rel="icon" type="image/png" href="alps-weather-icon.png">
@@ -89,10 +89,10 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
  <div class="sum"><div class="num" id="watchN">0</div><div class="label">🟡 Watch</div></div>
  <div class="sum"><div class="num" id="badN">0</div><div class="label">🔴 Consider change</div></div>
 </div>
-<div class="update"><div id="updated">Loading forecasts…</div><button onclick="loadAll()">↻ Refresh</button></div>
+<div class="update"><div id="updated">Loading forecasts…</div><button onclick="loadAll()">↻ Refresh</button> <button onclick="openSettings()">⚙️ Settings</button></div>
 </header>
 <main class="grid" id="grid"></main>
-<div class="modal" id="modal" onclick="if(event.target===this)closeDetail(event)"><div class="modalbox" id="modalContent"></div></div><footer>Live forecast: Open-Meteo · Mountain conditions can differ substantially from valley forecasts. Check local mountain/cable-car information before high-altitude hikes.</footer>
+<div class="modal" id="settingsModal" onclick="if(event.target===this)closeSettings()"><div class="modalbox" style="max-width:620px"><div class="modalhead"><div><h2 style="margin:0">⚙️ Weather Sources</h2><div class="muted">Open-Meteo stays active. AccuWeather is optional.</div></div><button class="close" onclick="closeSettings()">✕ Close</button></div><div class="settingsbox"><div><b>Open-Meteo</b> <span class="okmsg">● Active</span></div><hr style="border:0;border-top:1px solid var(--line);margin:14px 0"><div><b>AccuWeather</b> <span id="accuState">○ Not configured</span></div><div class="muted" style="margin-top:5px">The key is stored only in this browser/device. It is not written into GitHub.</div><input id="accuKey" type="password" autocomplete="off" placeholder="Paste AccuWeather API key here"><div class="settingsrow"><button class="close" onclick="saveAndTestAccu()">Save & Test</button><button class="close" onclick="clearAccu()">Remove key</button></div><div id="accuResult" style="margin-top:12px"></div></div></div></div><div class="modal" id="modal" onclick="if(event.target===this)closeDetail(event)"><div class="modalbox" id="modalContent"></div></div><footer>Live forecast: Open-Meteo · Mountain conditions can differ substantially from valley forecasts. Check local mountain/cable-car information before high-altitude hikes.</footer>
 </div>
 <script>
 const trip=[
@@ -217,5 +217,25 @@ async function loadAll(){
  grid.innerHTML=trip.map((t,i)=>{let x=latest[i];if(x)counts[judge(t,x)[0]]++;return card(t,x,i)}).join("");
  goodN.textContent=counts.good;watchN.textContent=counts.watch;badN.textContent=counts.bad;updated.textContent="Updated "+new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date());
 }
+const ACCU_KEY_STORAGE="alpsWeatherAccuKey";
+function openSettings(){const k=localStorage.getItem(ACCU_KEY_STORAGE)||"";accuKey.value=k;accuResult.textContent="";accuState.innerHTML=k?'<span class="okmsg">● Key saved on this device</span>':'○ Not configured';settingsModal.classList.add("open")}
+function closeSettings(){settingsModal.classList.remove("open")}
+function clearAccu(){localStorage.removeItem(ACCU_KEY_STORAGE);accuKey.value="";accuState.textContent="○ Not configured";accuResult.innerHTML='<span class="muted">Saved key removed from this device.</span>'}
+async function saveAndTestAccu(){
+ const key=accuKey.value.trim();if(!key){accuResult.innerHTML='<span class="errmsg">Enter the API key first.</span>';return}
+ accuResult.innerHTML='<span class="muted">Testing direct browser connection…</span>';
+ try{
+  const t=trip[0],u=`https://dataservice.accuweather.com/locations/v1/geoposition/search?q=${encodeURIComponent(t.lat+","+t.lon)}`;
+  const r=await fetch(u,{headers:{"Authorization":`Bearer ${key}`}});
+  if(r.status===401){accuResult.innerHTML='<span class="errmsg">🔑 Authentication failed (401).</span>';return}
+  if(r.status===403){accuResult.innerHTML='<span class="errmsg">⛔ AccuWeather returned 403. Check trial permissions.</span>';return}
+  if(r.status===429){accuResult.innerHTML='<span class="errmsg">⏳ Rate limit reached (429).</span>';return}
+  if(!r.ok){accuResult.innerHTML=`<span class="errmsg">AccuWeather returned HTTP ${r.status}.</span>`;return}
+  const d=await r.json(),loc=Array.isArray(d)?d[0]:d;if(!loc?.Key)throw Error("No location key");
+  localStorage.setItem(ACCU_KEY_STORAGE,key);accuState.innerHTML='<span class="okmsg">● Connected</span>';
+  accuResult.innerHTML=`<span class="okmsg">✅ AccuWeather connected.</span><div class="muted">Test location: ${loc.LocalizedName||loc.EnglishName||"location"} · Location key ${loc.Key}</div>`;
+ }catch(e){accuResult.innerHTML='<span class="errmsg">🚫 Browser request blocked or network error.</span><div class="muted">The key was not saved. If Open-Meteo still works, direct browser access to AccuWeather is probably blocked.</div>'}
+}
+
 loadAll(); setInterval(loadAll,30*60*1000);
 </script></body></html>
