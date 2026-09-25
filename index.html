@@ -135,9 +135,7 @@ async function oneModel(t,model){
  const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}${elevation}&models=${model}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_gusts_10m_max,snowfall_sum,precipitation_sum,precipitation_hours,sunrise,sunset&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,weather_code,wind_gusts_10m,freezing_level_height&timezone=auto&forecast_days=16`;
  const r=await fetch(url);if(!r.ok)return null;const j=await r.json();const i=j.daily?.time?.indexOf(t.date)??-1;if(i<0)return null;
  const get=(name)=>{const v=j.daily?.[name]?.[i];return (v===null||v===undefined||!Number.isFinite(Number(v)))?null:Number(v)};
- const code=get("weather_code"),max=get("temperature_2m_max"),min=get("temperature_2m_min");
- // A model is only valid for comparison when it has a real weather code and both temperatures.
- if(code===null||max===null||min===null)return null;
+ let code=get("weather_code"),max=get("temperature_2m_max"),min=get("temperature_2m_min");
  const hourly=[];
  const times=j.hourly?.time||[];
  for(let h=0;h<times.length;h++){
@@ -145,8 +143,25 @@ async function oneModel(t,model){
    const hv=name=>{const v=j.hourly?.[name]?.[h];return (v===null||v===undefined||!Number.isFinite(Number(v)))?null:Number(v)};
    hourly.push({time:times[h],temp:hv("temperature_2m"),feel:hv("apparent_temperature"),pop:hv("precipitation_probability"),precip:hv("precipitation"),rain:hv("rain"),showers:hv("showers"),snow:hv("snowfall"),code:hv("weather_code"),gust:hv("wind_gusts_10m"),freeze:hv("freezing_level_height")});
  }
+ // Recover a usable daily headline from hourly data when a model's daily
+ // aggregate is temporarily incomplete.
+ const nums=k=>hourly.map(h=>h[k]).filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number);
+ const temps=nums("temp"),gusts=nums("gust"),pops=nums("pop");
+ if(min===null&&temps.length)min=Math.min(...temps);
+ if(max===null&&temps.length)max=Math.max(...temps);
+ if(code===null){
+   const codes=nums("code");
+   if(codes.length){const counts={};codes.forEach(c=>counts[c]=(counts[c]||0)+1);code=[...codes].sort((a,b)=>(counts[b]-counts[a]))[0]}
+ }
+ if(code===null||max===null||min===null)return null;
+ let rain=get("precipitation_probability_max"),gust=get("wind_gusts_10m_max"),snow=get("snowfall_sum"),precip=get("precipitation_sum"),rainHours=get("precipitation_hours");
+ if(rain===null&&pops.length)rain=Math.max(...pops);
+ if(gust===null&&gusts.length)gust=Math.max(...gusts);
+ if(precip===null&&hourly.length)precip=hourly.reduce((a,h)=>a+(h.precip??0),0);
+ if(snow===null&&hourly.length)snow=hourly.reduce((a,h)=>a+(h.snow??0),0);
+ if(rainHours===null&&hourly.length)rainHours=hourly.filter(h=>(h.precip??0)>=0.1||(h.rain??0)>=0.1||(h.showers??0)>=0.1||(h.snow??0)>0).length;
  const sunrise=j.daily?.sunrise?.[i]??null,sunset=j.daily?.sunset?.[i]??null;
- return {model,code,max,min,rain:get("precipitation_probability_max"),gust:get("wind_gusts_10m_max"),snow:get("snowfall_sum"),precip:get("precipitation_sum"),rainHours:get("precipitation_hours"),sunrise,sunset,hourly};
+ return {model,code,max,min,rain,gust,snow,precip,rainHours,sunrise,sunset,hourly};
 }
 function representativeCode(m){
  const severity=c=>({99:9,96:9,95:8,82:7,75:7,73:6,71:5,65:6,63:5,61:4,81:5,80:4,55:4,53:3,51:2,48:2,45:2,3:1,2:1,1:0,0:0}[c]??0);
@@ -155,7 +170,9 @@ function representativeCode(m){
 }
 async function forecast(t){
  const names=t.country==="Switzerland"?[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["meteoswiss_icon_seamless","MeteoSwiss"],["gfs_seamless","GFS"]]:t.country==="Austria"?[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["geosphere_seamless","GeoSphere"],["gfs_seamless","GFS"]]:[["ecmwf_ifs025","ECMWF"],["icon_seamless","ICON"],["gfs_seamless","GFS"]];
- const raw=await Promise.all(names.map(async([id,label])=>{let v=await oneModel(t,id);if(v)v.label=label;return v;}));const m=raw.filter(Boolean);if(!m.length)return null;
+ const raw=await Promise.all(names.map(async([id,label])=>{let v=await oneModel(t,id);if(v)v.label=label;return v;}));let m=raw.filter(Boolean);
+ if(!m.length){let fallback=await oneModel(t,"best_match");if(fallback){fallback.label="Open-Meteo Best Match";m=[fallback]}}
+ if(!m.length)return null;
  const vals=k=>m.map(v=>v[k]).filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number);
  const avg=k=>{const a=vals(k);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
  const mn=k=>{const a=vals(k);return a.length?Math.min(...a):null},mx=k=>{const a=vals(k);return a.length?Math.max(...a):null};
