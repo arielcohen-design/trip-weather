@@ -82,6 +82,8 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 .dayparts{margin:5px 0 4px;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:3px 0}
 .daypartrow{display:grid;grid-template-columns:62px 24px 36px 1fr 52px;align-items:center;gap:3px;font-size:10.5px;line-height:1.25;color:#e7f0f6;min-height:18px}
 .daypartrow+.daypartrow{border-top:1px solid rgba(255,255,255,.06)}
+.daypartrow.dp-watch{background:rgba(255,193,7,.14);box-shadow:inset 3px 0 0 rgba(255,193,7,.72);border-radius:4px;padding-left:4px;padding-right:3px}
+.daypartrow.dp-alert{background:rgba(255,75,85,.16);box-shadow:inset 3px 0 0 rgba(255,75,85,.78);border-radius:4px;padding-left:4px;padding-right:3px}
 .dayparttime{font-weight:800;color:#c8d7e5}.dayparticon{text-align:center;font-size:14px}.dayparttemp{font-weight:800;text-align:right}.daypartrain{text-align:right}.daypartmm{text-align:right;color:#bcd4e5}
 @media(min-width:900px){.card{min-height:390px !important}}
 @media(max-width:650px){.daypartrow{grid-template-columns:72px 28px 42px 1fr 58px;font-size:12px}}
@@ -221,9 +223,17 @@ function dayPartSummary(x){
 }
 function dayPartsHTML(x){
  const parts=dayPartSummary(x);if(!parts.length)return "";
+ // Highlight only genuinely useful planning signals. Red is reserved for a
+ // stronger wet period; yellow flags a meaningful chance/amount of rain.
+ const riskClass=p=>{
+   const pop=p.pop??0, mm=p.precip??0;
+   if(mm>=3 || (mm>=1.5&&pop>=60) || pop>=80)return " dp-alert";
+   if(mm>=0.5 || pop>=40)return " dp-watch";
+   return "";
+ };
  return `<div class="dayparts">${parts.map(p=>p.empty
   ?`<div class="daypartrow"><span class="dayparttime">${p.label}</span><span>—</span><span>—</span><span></span><span>—</span></div>`
-  :`<div class="daypartrow"><span class="dayparttime">${p.label}</span><span class="dayparticon">${weatherIcon(p.code)}</span><span class="dayparttemp">${p.temp==null?"—":p.temp+"°"}</span><span class="daypartrain">💧 ${p.pop==null?"—":p.pop+"%"}</span><span class="daypartmm">${p.precip==null?"—":p.precip.toFixed(1)+"mm"}</span></div>`
+  :`<div class="daypartrow${riskClass(p)}"><span class="dayparttime">${p.label}</span><span class="dayparticon">${weatherIcon(p.code)}</span><span class="dayparttemp">${p.temp==null?"—":p.temp+"°"}</span><span class="daypartrain">💧 ${p.pop==null?"—":p.pop+"%"}</span><span class="daypartmm">${p.precip==null?"—":p.precip.toFixed(1)+"mm"}</span></div>`
  ).join("")}</div>`;
 }
 function card(t,x,i){
