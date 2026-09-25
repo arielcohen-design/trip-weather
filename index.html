@@ -77,6 +77,14 @@ footer{text-align:center;color:#9fb7c8;padding:8px 4px 2px;font-size:10px}
 .accumetric{background:rgba(255,255,255,.05);padding:8px;border-radius:9px;text-align:center}.accumetric b{display:block;font-size:16px}.accumetric span{font-size:10px;color:var(--muted)}
 .accuphrase{font-size:12px;color:#e7f0f6;margin-top:8px}.accunote{font-size:11px;color:var(--muted);margin-top:7px}
 @media(max-width:700px){.accugrid{grid-template-columns:repeat(2,1fr)}}
+
+/* V6.6 — compact ECMWF day-part forecast on main cards */
+.dayparts{margin:5px 0 4px;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:3px 0}
+.daypartrow{display:grid;grid-template-columns:62px 24px 36px 1fr 52px;align-items:center;gap:3px;font-size:10.5px;line-height:1.25;color:#e7f0f6;min-height:18px}
+.daypartrow+.daypartrow{border-top:1px solid rgba(255,255,255,.06)}
+.dayparttime{font-weight:800;color:#c8d7e5}.dayparticon{text-align:center;font-size:14px}.dayparttemp{font-weight:800;text-align:right}.daypartrain{text-align:right}.daypartmm{text-align:right;color:#bcd4e5}
+@media(min-width:900px){.card{min-height:390px !important}}
+@media(max-width:650px){.daypartrow{grid-template-columns:72px 28px 42px 1fr 58px;font-size:12px}}
 </style>
 
 <link rel="apple-touch-icon" href="alps-weather-icon.png">
@@ -187,11 +195,42 @@ async function forecast(t){
  const sunSource=ref?.sunrise&&ref?.sunset?ref:m.find(v=>v.sunrise&&v.sunset);
  return {code:ref.code,max:roundOrNull(ref.max),min:roundOrNull(ref.min),rain:roundOrNull(ref.rain),gust:roundOrNull(ref.gust),snow:round1(ref.snow),rainHours:round1(ref.rainHours),precip:round1(ref.precip),sunrise:sunSource?.sunrise??null,sunset:sunSource?.sunset??null,modelCount:m.length,rainy,badish,disagreement,confidence,details:m,reference:ref.label};
 }
+
+function dayPartSummary(x){
+ const base=x?.details?.find(v=>v.label==="ECMWF"&&v.hourly?.length)||x?.details?.find(v=>v.hourly?.length);
+ if(!base)return [];
+ const windows=[
+  {label:"00–08",from:0,to:8},
+  {label:"08–12",from:8,to:12},
+  {label:"12–20",from:12,to:20},
+  {label:"20–00",from:20,to:24}
+ ];
+ const severity=c=>({99:10,96:10,95:9,82:8,75:8,73:7,71:6,65:7,63:6,61:5,81:6,80:5,55:4,53:3,51:2,48:2,45:2,3:1,2:1,1:0,0:0}[c]??0);
+ return windows.map(w=>{
+  const hs=base.hourly.filter(h=>{const q=Number(h.time.slice(11,13));return q>=w.from&&q<w.to});
+  if(!hs.length)return {...w,empty:true};
+  const nums=k=>hs.map(h=>h[k]).filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number);
+  const temps=nums("temp"),pops=nums("pop"),precips=nums("precip"),codes=nums("code");
+  const temp=temps.length?Math.round(temps.reduce((a,b)=>a+b,0)/temps.length):null;
+  const pop=pops.length?Math.round(Math.max(...pops)):null;
+  const precip=precips.length?Math.round(precips.reduce((a,b)=>a+b,0)*10)/10:null;
+  // Pick the most significant weather occurring in the window, so a short shower is not hidden by many cloudy hours.
+  const code=codes.length?[...codes].sort((a,b)=>severity(b)-severity(a))[0]:null;
+  return {...w,temp,pop,precip,code};
+ });
+}
+function dayPartsHTML(x){
+ const parts=dayPartSummary(x);if(!parts.length)return "";
+ return `<div class="dayparts">${parts.map(p=>p.empty
+  ?`<div class="daypartrow"><span class="dayparttime">${p.label}</span><span>—</span><span>—</span><span></span><span>—</span></div>`
+  :`<div class="daypartrow"><span class="dayparttime">${p.label}</span><span class="dayparticon">${weatherIcon(p.code)}</span><span class="dayparttemp">${p.temp==null?"—":p.temp+"°"}</span><span class="daypartrain">💧 ${p.pop==null?"—":p.pop+"%"}</span><span class="daypartmm">${p.precip==null?"—":p.precip.toFixed(1)+"mm"}</span></div>`
+ ).join("")}</div>`;
+}
 function card(t,x,i){
  let state,label,note,icon,desc,conf="";
  if(!x){state="early";label="TOO EARLY";note="Outside forecast window";icon="◌";desc="Forecast not available yet"}
  else{[state,label,note]=judge(t,x);[icon,desc]=wx[x.code]||["🌦️","Mixed weather"];conf=`<div class="confidence ${x.confidence.toLowerCase()}">${x.confidence==="HIGH"?"✓":x.confidence==="MEDIUM"?"≈":"⚠"} ${x.confidence} confidence · ${x.modelCount} models · Main: ${x.reference||"ECMWF"}</div>`}
- return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="sunline">🌅 ${sunTime(x?.sunrise)} &nbsp; 🌇 ${sunTime(x?.sunset)}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
+ return `<section class="card" ${x?`onclick="showDetail(${i})"`:""}><div class="top"><span class="day">Day ${t.d}</span><span class="date">${fmtDate(t.date)}</span></div><div class="place">📍 ${t.place}</div><div class="country">Weather focus · ${t.country}${t.elev?` · ~${t.elev}m`:""}</div><div class="sunline">🌅 ${sunTime(x?.sunrise)} &nbsp; 🌇 ${sunTime(x?.sunset)}</div><div class="weather">${icon}</div>${x?`<div class="temps">${x.min}° / ${x.max}°C</div><div class="metrics"><span>💧 ${x.rain==null?"—":x.rain+"%"}</span><span>🌧️ ${x.rainHours==null?"—":x.rainHours+"h rain"}</span><span>☔ ${x.precip==null?"—":x.precip+" mm"}</span><span>💨 ${x.gust==null?"—":x.gust+" km/h"}</span></div>${dayPartsHTML(x)}${conf}`:`<div class="temps">—</div>`}<div class="desc">${desc}</div>${x?`<div class="hint">tap for models</div>`:""}<div class="status ${state}">${label}<small>${note}</small></div></section>`;
 }
 let latest=[];
 function hourLabel(iso){return iso.slice(11,16)}
